@@ -13,7 +13,7 @@ enum NumericMatch<'a> {
 fn main() {
     let mut coords: Vec<u32> = Vec::new();
 
-    let file = File::open("./i2.txt").unwrap();
+    let file = File::open("./input.txt").unwrap();
     for line in BufReader::new(file).lines() {
         match get_coord(line.unwrap()) {
             None => (),
@@ -39,25 +39,33 @@ fn get_coord(line: String) -> Option<u32> {
 fn parse_digits(line: &str) -> Vec<u32> {
     let mut parsed: Vec<u32> = Vec::new();
     let mut buffer = (0, 1);
-    for (i, chr) in line.chars().enumerate() {
-        println!("{}, {}, {:?}", i, chr, buffer);
+    let mut i: usize = 0;
+    while buffer.1 <= line.len() {
+        let slc: &str = &line[buffer.0..buffer.1];
+        let chr = slc.chars().next().unwrap();
         if chr.is_numeric() {
-            buffer = (i + 1, i + 2);
+            i += 1;
+            buffer = (i, i + 1);
             parsed.push(chr.to_digit(10).unwrap());
             continue;
         }
-        match check_for_digit(&line[buffer.0..buffer.1]) {
+        match check_for_digit(slc) {
             NumericMatch::None => {
                 if buffer.1 - buffer.0 > 1 {
                     buffer = (i, i + 1);
                 } else {
-                    buffer = (i + 1, i + 2);
+                    i += 1;
+                    buffer = (i, i + 1);
                 }
             },
-            NumericMatch::Partial(_) => buffer.1 += 1,
+            NumericMatch::Partial(_) => {
+                buffer.1 += 1;
+                i += 1;
+            },
             NumericMatch::Full((_, num)) => {
                 parsed.push(num);
-                buffer = (i + 1, i + 2);
+                i += 1;
+                buffer = (i, i + 1);
             }
         }
     }

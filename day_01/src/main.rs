@@ -64,7 +64,6 @@ fn parse_digits(line: &str) -> Vec<u32> {
             },
             NumericMatch::Full((_, num)) => {
                 parsed.push(num);
-                i += 1;
                 buffer = (i, i + 1);
             }
         }

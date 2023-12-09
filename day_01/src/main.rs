@@ -4,14 +4,8 @@ use once_cell::sync::Lazy;
 
 static NUMERIC_WORDS: Lazy<Vec<&str>> = Lazy::new(|| vec!["one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]);
 
-enum NumericMatch<'a> {
-    None,
-    Partial(Vec<&'a str>),
-    Full((&'a str, u32))
-}
-
 fn main() {
-    let mut coords: Vec<u32> = Vec::new();
+    let mut coords: Vec<u8> = Vec::new();
 
     let file = File::open("./input.txt").unwrap();
     for line in BufReader::new(file).lines() {
@@ -21,11 +15,11 @@ fn main() {
         }
     }
 
-    let sum: u32 = coords.iter().sum();
+    let sum: u32 = coords.iter().map(|&x| x as u32).sum();
     println!("Summary of calibration values: {}", sum);
 }
 
-fn get_coord(line: String) -> Option<u32> {
+fn get_coord(line: String) -> Option<u8> {
     println!("{}", line);
     let digits = parse_digits(&line);
     println!("{:?}", digits);
@@ -36,54 +30,19 @@ fn get_coord(line: String) -> Option<u32> {
     Some(digits.first().unwrap() * 10 + digits.last().unwrap())
 }
 
-fn parse_digits(line: &str) -> Vec<u32> {
-    let mut parsed: Vec<u32> = Vec::new();
-    let mut buffer = (0, 1);
-    let mut i: usize = 0;
-    while buffer.1 <= line.len() {
-        let slc: &str = &line[buffer.0..buffer.1];
-        let chr = slc.chars().next().unwrap();
-        if chr.is_numeric() {
-            i += 1;
-            buffer = (i, i + 1);
-            parsed.push(chr.to_digit(10).unwrap());
-            continue;
-        }
-        match check_for_digit(slc) {
-            NumericMatch::None => {
-                if buffer.1 - buffer.0 > 1 {
-                    buffer = (i, i + 1);
-                } else {
-                    i += 1;
-                    buffer = (i, i + 1);
-                }
-            },
-            NumericMatch::Partial(_) => {
-                buffer.1 += 1;
-                i += 1;
-            },
-            NumericMatch::Full((_, num)) => {
-                parsed.push(num);
-                buffer = (i, i + 1);
-            }
-        }
-    }
-    parsed
-}
+fn parse_digits(line: &str) -> Vec<u8> {
+    let mut positions: Vec<(usize, u8)> = line
+        .match_indices(char::is_numeric)
+        .map(|(i, chr)| (i, chr.parse::<u8>().unwrap()))
+        .collect();
 
-fn check_for_digit(text: &str) -> NumericMatch {
-    println!("{}", text);
-    let mut partials: Vec<&str> = Vec::new();
-    for (i, digit) in NUMERIC_WORDS.clone().into_iter().enumerate() {
-        if digit.starts_with(text) {
-            partials.push(digit);
-            if digit.len() == text.len() {
-                return NumericMatch::Full((digit, u32::try_from(i).unwrap() + 1));
-            }
-        }
+    for (i, &word) in NUMERIC_WORDS.iter().enumerate() {
+        positions.extend(line
+            .match_indices(word)
+            .map(|(pos, _)| (pos, (i + 1) as u8))
+        );
     }
-    if partials.len() > 0 {
-        return NumericMatch::Partial(partials);
-    }
-    NumericMatch::None
+    positions.sort_by(|a, b| a.0.cmp(&b.0));
+
+    positions.into_iter().map(|(_, digit)| digit).collect()
 }

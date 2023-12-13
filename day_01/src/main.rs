@@ -20,9 +20,7 @@ fn main() {
 }
 
 fn get_coord(line: String) -> Option<u8> {
-    println!("{}", line);
     let digits = parse_digits(&line);
-    println!("{:?}", digits);
     if digits.len() == 0 {
         return None;
     }
